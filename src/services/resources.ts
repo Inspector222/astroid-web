@@ -8,6 +8,8 @@ import type {
   AnalyticsOverview,
   ApiKey,
   AppNotification,
+  AssetBalance,
+  AssetRate,
   Budget,
   ChatMessage,
   MemoryRecord,
@@ -99,6 +101,11 @@ export const resources = {
       mock.wallets.find((w) => w.id === id) ?? notFound('Wallet'),
       () => one<Wallet>(`/wallets/${id}`),
     ),
+  getWalletBalances: (id: string): Promise<AssetBalance[]> =>
+    resolve(
+      mock.wallets.find((w) => w.id === id)?.balances ?? notFound('Balances'),
+      () => one<AssetBalance[]>(`/wallets/${id}/balances`),
+    ),
 
   // -- agents -------------------------------------------------------------
   getAgents: (): Promise<Agent[]> => resolve(mock.agents, () => list<Agent[]>('/agents')),
@@ -184,6 +191,10 @@ export const resources = {
       mock.memoryRecords.find((m) => m.id === id) ?? notFound('Memory record'),
       () => one<MemoryRecord>(`/memory/${id}`),
     ),
+
+  // -- asset rates ---------------------------------------------------------
+  getAssetRates: (): Promise<AssetRate[]> =>
+    resolve(mock.assetRates, () => list<AssetRate[]>('/rates')),
 
   // -- notifications ------------------------------------------------------
   getNotifications: (): Promise<AppNotification[]> =>

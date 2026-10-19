@@ -12,8 +12,15 @@ import { useCommandStore, useAssistantStore } from '@/stores/ui-store';
 import { NetworkHealthWidget } from '@/features/network/NetworkHealthWidget';
 import { CircuitBreakerControl } from '@/features/security';
 import { TelemetryStatusIndicator } from '@/components/shell/telemetry-status-indicator';
+import { cn } from '@/lib/cn';
+
+/** Shared, brand-tinted focus ring for every top-bar control (WCAG AA). */
+const TOPBAR_FOCUS =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 interface TopbarProps {
+  /** Whether the mobile navigation drawer is currently open. */
+  navOpen: boolean;
   /** Opens the mobile navigation drawer. */
   onOpenNav: () => void;
 }
@@ -23,7 +30,7 @@ interface TopbarProps {
  * assistant, notifications, and the account menu. Primary navigation lives in
  * the floating {@link CommandDock} (desktop) and the {@link MobileNav} drawer.
  */
-export function Topbar({ onOpenNav }: TopbarProps) {
+export function Topbar({ navOpen, onOpenNav }: TopbarProps) {
   const orgsQuery = useOrganizations();
   const userQuery = useCurrentUser();
   const telemetry = useAgentTelemetrySubscription();
@@ -39,7 +46,10 @@ export function Topbar({ onOpenNav }: TopbarProps) {
 
   const orgItems: DropdownItem[] = orgs.map((org) => ({
     label: org.name,
-    icon: org.id === (activeOrg?.id ?? '') ? <Check className="h-3.5 w-3.5 text-gold" /> : undefined,
+    icon:
+      org.id === (activeOrg?.id ?? '') ? (
+        <Check className="h-3.5 w-3.5 text-gold" />
+      ) : undefined,
     onSelect: () => setActiveOrg(org.id),
   }));
 
@@ -53,20 +63,34 @@ export function Topbar({ onOpenNav }: TopbarProps) {
   return (
     <header className="sticky top-0 z-30 flex flex-col border-b border-border bg-background/95 backdrop-blur-xl">
       {/* Top Tier: Brand & Global Actions */}
-      <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
-        <Link href="/overview" className="flex items-center gap-2.5 mr-2">
+      <div className="min-h-16 flex flex-wrap items-center gap-3 px-4 py-2 sm:px-6 lg:py-0 lg:min-h-0">
+        <Link
+          href="/overview"
+          className={cn(
+            'gap-2.5 mr-2 flex items-center rounded-button',
+            TOPBAR_FOCUS,
+          )}
+        >
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-button bg-accent-gradient text-white shadow-gold">
             <Sparkles className="h-4 w-4" aria-hidden />
           </span>
-          <span className="hidden sm:inline-block font-display text-lg font-semibold tracking-tight">Astroid</span>
+          <span className="sr-only">Astroid home</span>
+          <span className="hidden font-display text-lg font-semibold tracking-tight sm:inline-block">
+            Astroid
+          </span>
         </Link>
 
         {/* Mobile nav trigger */}
         <button
           type="button"
           onClick={onOpenNav}
-          className="grid h-9 w-9 place-items-center rounded-button text-foreground-secondary transition-colors duration-fast hover:bg-surface-secondary hover:text-foreground lg:hidden"
-          aria-label="Open navigation"
+          className={cn(
+            'grid h-9 w-9 place-items-center rounded-button text-foreground-secondary transition-colors duration-fast hover:bg-surface-secondary hover:text-foreground lg:hidden',
+            TOPBAR_FOCUS,
+          )}
+          aria-label="Open navigation menu"
+          aria-expanded={navOpen}
+          aria-controls="mobile-nav-drawer"
         >
           <Menu className="h-5 w-5" aria-hidden />
         </button>
@@ -74,13 +98,20 @@ export function Topbar({ onOpenNav }: TopbarProps) {
         {/* Org switcher */}
         <Dropdown
           align="start"
+          triggerClassName={TOPBAR_FOCUS}
+          aria-label="Switch organization"
           trigger={
-            <span className="flex items-center gap-2 rounded-button px-2.5 py-1.5 text-sm font-medium transition-colors duration-fast hover:bg-surface-secondary">
+            <span className="px-2.5 py-1.5 flex items-center gap-2 rounded-button text-sm font-medium transition-colors duration-fast hover:bg-surface-secondary">
               <span className="grid h-6 w-6 place-items-center rounded-xs bg-accent-gradient text-2xs font-bold text-white">
                 {(activeOrg?.name ?? 'A').charAt(0)}
               </span>
-              <span className="max-w-[140px] truncate hidden sm:inline-block">{activeOrg?.name ?? 'Astroid'}</span>
-              <ChevronsUpDown className="h-3.5 w-3.5 text-foreground-muted" aria-hidden />
+              <span className="hidden max-w-[140px] truncate sm:inline-block">
+                {activeOrg?.name ?? 'Astroid'}
+              </span>
+              <ChevronsUpDown
+                className="h-3.5 w-3.5 text-foreground-muted"
+                aria-hidden
+              />
             </span>
           }
           items={orgItems}
@@ -92,12 +123,16 @@ export function Topbar({ onOpenNav }: TopbarProps) {
         <button
           type="button"
           onClick={() => openCommand(true)}
-          className="hidden items-center gap-2 rounded-button border border-border bg-surface px-3 py-1.5 text-xs text-foreground-muted transition-colors duration-fast hover:border-border-strong hover:text-foreground-secondary md:flex"
+          className={cn(
+            'py-1.5 hidden items-center gap-2 rounded-button border border-border bg-surface px-3 text-xs text-foreground-muted transition-colors duration-fast hover:border-border-strong hover:text-foreground-secondary md:flex',
+            TOPBAR_FOCUS,
+          )}
           aria-label="Open command palette"
+          aria-haspopup="dialog"
         >
           <Search className="h-3.5 w-3.5" aria-hidden />
           <span>Search command…</span>
-          <kbd className="rounded-xs border border-border bg-surface-secondary px-1.5 py-0.5 font-mono text-2xs">
+          <kbd className="px-1.5 py-0.5 rounded-xs border border-border bg-surface-secondary font-mono text-2xs">
             ⌘K
           </kbd>
         </button>
@@ -115,8 +150,12 @@ export function Topbar({ onOpenNav }: TopbarProps) {
         <button
           type="button"
           onClick={() => openAssistant(true)}
-          className="grid h-9 w-9 place-items-center rounded-button text-gold transition-colors duration-fast hover:bg-gold-soft"
+          className={cn(
+            'grid h-9 w-9 place-items-center rounded-button text-gold transition-colors duration-fast hover:bg-gold-soft',
+            TOPBAR_FOCUS,
+          )}
           aria-label="Open AI assistant"
+          aria-haspopup="dialog"
         >
           <Sparkles className="h-[18px] w-[18px]" aria-hidden />
         </button>
@@ -126,6 +165,8 @@ export function Topbar({ onOpenNav }: TopbarProps) {
 
         {/* Account */}
         <Dropdown
+          triggerClassName={TOPBAR_FOCUS}
+          aria-label="Account menu"
           trigger={
             <span className="ml-1 flex items-center gap-2 rounded-md transition-opacity duration-fast hover:opacity-80">
               <Avatar name={user?.name ?? 'User'} src={user?.avatar} size="sm" />
@@ -133,6 +174,32 @@ export function Topbar({ onOpenNav }: TopbarProps) {
           }
           items={accountItems}
         />
+        <div className="flex items-center gap-3 sm:hidden">
+          <button
+            type="button"
+            onClick={() => openAssistant(true)}
+            className={cn(
+              'grid h-9 w-9 place-items-center rounded-button text-gold transition-colors duration-fast hover:bg-gold-soft',
+              TOPBAR_FOCUS,
+            )}
+            aria-label="Open AI assistant"
+            aria-haspopup="dialog"
+          >
+            <Sparkles className="h-[18px] w-[18px]" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => openCommand(true)}
+            className={cn(
+              'grid h-9 w-9 place-items-center rounded-button text-foreground-secondary transition-colors duration-fast hover:bg-surface-secondary hover:text-foreground',
+              TOPBAR_FOCUS,
+            )}
+            aria-label="Open command palette"
+            aria-haspopup="dialog"
+          >
+            <Search className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
       </div>
     </header>
   );
